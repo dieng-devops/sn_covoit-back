@@ -166,6 +166,12 @@ REST_FRAMEWORK = {
 
 # authentication system settings
 DJOSER = {
+    'DOMAIN': 'senegalsmart.com',
+    'SITE_NAME': 'users',
+    'PASSWORD_RESET_CONFIRM_URL': '#/password/reset/confirm/{uid}/{token}',
+    'ACTIVATION_URL': '#/activate/{uid}/{token}',
+    'SEND_ACTIVATION_EMAIL': True,
+    'PASSWORD_VALIDATORS': [],
     'SERIALIZERS': {
         'user_create': 'users.serializers.UserRegistrationSerializer',
         'user': 'users.serializers.CustomUserSerializer',
