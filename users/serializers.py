@@ -24,6 +24,11 @@ class CustomUserSerializer(UserSerializer):
             'image',
             "is_superuser",
             "has_profile",
+            "email_verifie",
+            'experience',
+            'discussion',
+            'fumeur',
+            'musique',
         )
 
     def get_has_profile(self, obj):
@@ -113,5 +118,10 @@ class UserRegistrationSerializer(UserCreateSerializer):
             "location",
             'image',
             'password',
+            "email_verifie",
+            'experience',
+            'discussion',
+            'fumeur',
+            'musique',
         )
 

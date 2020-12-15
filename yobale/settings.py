@@ -52,6 +52,11 @@ INSTALLED_APPS = [
     'widget_tweaks',
     # dev defined apps
     # 'core',
+    # SIMPLE_MAIL
+    'simple_mail',
+    'ckeditor',
+    'modeltranslation',
+    # SIMPLE_MAIL
     'users',
 ]
 
@@ -125,8 +130,8 @@ AUTHENTICATION_BACKENDS = (
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
-# LANGUAGE_CODE = 'en-us'
-LANGUAGE_CODE = "fr-fr"
+LANGUAGE_CODE = 'en-us'
+#LANGUAGE_CODE = "fr-fr"
 # TIME_ZONE = 'UTC'
 TIME_ZONE = "Europe/Paris"
 
@@ -147,8 +152,28 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = 'media'
 
 # email settings
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_FROM_ADDRESS = 'adamadieng.dev@gmail.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_BACKEND = 'email_extras.backends.BrowsableEmailBackend'
+EMAIL_USE_TLS = False 
+EMAIL_USE_SSL = False
+EMAIL_HOST = 'ssl0.ovh.net'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'adama.dieng@senegalsmart.com'
+EMAIL_HOST_PASSWORD = "Nasgueye2020#"
+EMAIL_FROM_ADDRESS = 'adama.dieng@senegalsmart.com'
+
+# SIMPLE_MAIL
+# enable django-modeltranslation integration
+SIMPLE_MAIL_USE_MODELTRANSALTION = False
+# enable django-ckeditor integration
+SIMPLE_MAIL_USE_CKEDITOR = False
+# set default email template
+SIMPLE_MAIL_DEFAULT_TEMPLATE = 'simple_mail/default.html'
+# enable/disable cssutils warning logs
+SIMPLE_MAIL_LOG_CSS_WARNING = False
+# storage for logo and banner
+SIMPLE_MAIL_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# End for SIMPLE_MAIL
 
 AUTH_USER_MODEL = 'users.UserAccount'
 
