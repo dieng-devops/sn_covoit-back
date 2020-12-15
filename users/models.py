@@ -153,3 +153,32 @@ class PassagerProfile(models.Model):
 
     def __str__(self):
         return f"{self.user}"
+
+############ Creation des modeles
+class Product(models.Model):
+
+    date_add = models.DateTimeField(auto_now_add=True)
+    name     = models.CharField(max_length=255)
+    code     = models.CharField(max_length=100, null=True)
+    price    = models.FloatField()
+    supplier = models.ForeignKey('Supplier', null=True, on_delete=models.CASCADE)
+    image    = models.ImageField(upload_to='product')
+
+    def __unicode__(self):
+        return "{0}".format(self.code, )
+
+class ProductItem(models.Model):
+
+    product = models.ForeignKey('Product', related_name="product_item", on_delete=models.CASCADE)
+    code    = models.CharField(max_length=255)
+    ean13   = models.CharField(max_length=255)
+
+    def __unicode__(self):
+        return "{0}".format(self.code, )
+
+class Supplier(models.Model):
+
+    name = models.CharField(max_length=255)
+ 
+    def __unicode__(self):
+        return "{0}".format(self.name, )
