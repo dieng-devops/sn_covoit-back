@@ -1,11 +1,11 @@
 from django.shortcuts import render
-
+from rest_framework import viewsets
 from django.contrib.auth import get_user_model
 from rest_framework.generics import ListAPIView, RetrieveAPIView,  CreateAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import ModelViewSet
-from .models import TrainerProfile, TrainerSpeciality,  MemberProfile, NextOfKin
-from .serializers import CustomUserSerializer, TrainerCreateSerializer, TrainerDetailSerializer, TrainerSpecialtySerializer,  MemberDetailSerializer, MemberProfileCreateSerializer, NextOfKinSerializer
+from .models import *
+from .serializers import *
 
 User = get_user_model()
 # Create your views here.
@@ -66,3 +66,5 @@ class TrainerAPIView(ModelViewSet):
 class TrainerSpecialtyListAPIView(ListAPIView):
     serializer_class = TrainerSpecialtySerializer
     queryset = TrainerSpeciality.objects.all()
+
+############# REST

@@ -1,9 +1,8 @@
 from django.core.exceptions import ObjectDoesNotExist
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework.serializers import SerializerMethodField
-from rest_framework.serializers import CurrentUserDefault, HiddenField, ModelSerializer, StringRelatedField
-from .models import TrainerProfile, TrainerSpeciality,  MemberProfile, NextOfKin
-from rest_framework.serializers import CurrentUserDefault, HiddenField,  ModelSerializer,  PrimaryKeyRelatedField, StringRelatedField
+from rest_framework import serializers
+from rest_framework.serializers import SerializerMethodField, CurrentUserDefault, HiddenField, ModelSerializer, StringRelatedField, PrimaryKeyRelatedField
+from .models import *
 
 # Serialiser un User Cutomise
 class CustomUserSerializer(UserSerializer):
@@ -125,3 +124,14 @@ class UserRegistrationSerializer(UserCreateSerializer):
             'musique',
         )
 
+########## REST
+
+class AuthorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Author
+        fields = ['id', 'name', 'added_by', 'created_by']
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = ['id', 'title', 'description', 'created_date', 'author', 'added_by']
