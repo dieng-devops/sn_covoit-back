@@ -159,7 +159,7 @@ EMAIL_USE_SSL = False
 EMAIL_HOST = 'ssl0.ovh.net'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'adama.dieng@senegalsmart.com'
-EMAIL_HOST_PASSWORD = "Nasgueye2020#"
+EMAIL_HOST_PASSWORD = "Blablabla"
 EMAIL_FROM_ADDRESS = 'adama.dieng@senegalsmart.com'
 
 # SIMPLE_MAIL
