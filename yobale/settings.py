@@ -39,9 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Model class django.contrib.sites.models.Site
     'django.contrib.sites',
-    # third party apps
     'allauth',
     'allauth.account',
     'djoser',
@@ -50,13 +48,12 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'widget_tweaks',
-    # dev defined apps
-    # 'core',
-    # SIMPLE_MAIL
     'simple_mail',
     'ckeditor',
     'modeltranslation',
     # SIMPLE_MAIL
+    'colorfield',
+    'location_field.apps.DefaultConfig',
     'users',
 ]
 
@@ -68,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_currentuser.middleware.ThreadLocalUserMiddleware',
 ]
 
 ROOT_URLCONF = 'yobale.urls'
@@ -130,8 +128,8 @@ AUTHENTICATION_BACKENDS = (
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-#LANGUAGE_CODE = "fr-fr"
+#LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "fr-fr"
 # TIME_ZONE = 'UTC'
 TIME_ZONE = "Europe/Paris"
 
@@ -159,7 +157,7 @@ EMAIL_USE_SSL = False
 EMAIL_HOST = 'ssl0.ovh.net'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'adama.dieng@senegalsmart.com'
-EMAIL_HOST_PASSWORD = "Blablabla"
+EMAIL_HOST_PASSWORD = ""
 EMAIL_FROM_ADDRESS = 'adama.dieng@senegalsmart.com'
 
 # SIMPLE_MAIL
@@ -178,11 +176,22 @@ SIMPLE_MAIL_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 AUTH_USER_MODEL = 'users.UserAccount'
 
 # restframework configs
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': (
+#         'rest_framework.authentication.TokenAuthentication',
+#         'rest_framework_simplejwt.authentication.JWTTokenUserAuthentication',
+#         'rest_framework.authentication.SessionAuthentication',
+#     ),
+#     'DEFAULT_PERMISSION_CLASSES': [
+#         'rest_framework.permissions.IsAuthenticated',
+#     ]
+# }
+#configure DRF
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework_simplejwt.authentication.JWTTokenUserAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -192,8 +201,9 @@ REST_FRAMEWORK = {
 # authentication system settings
 DJOSER = {
     'DOMAIN': 'senegalsmart.com',
-    'SITE_NAME': 'users',
+    'SITE_NAME': 'users',    
     'PASSWORD_RESET_CONFIRM_URL': '#/password/reset/confirm/{uid}/{token}',
+    'USERNAME_RESET_CONFIRM_URL': '#/username/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': '#/activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL': True,
     'PASSWORD_VALIDATORS': [],
@@ -226,4 +236,30 @@ PHONENUMBER_DEFAULT_REGION='FR'
 # google calendar credentials
 #GOOGLE_SERVICE_ACCOUNT_KEY_FILE_PATH=os.path.join(BASE_DIR, 'gymit-service.json')
 
-APPEND_SLASH=False 
+APPEND_SLASH=False
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+LOCATION_FIELD = {
+'provider.google.api': '//maps.google.com/maps/api/js?sensor=false',
+'provider.google.api_key': '<PLACE YOUR API KEY HERE>',
+'provider.google.api_libraries': '',
+'provider.google.map.type': 'ROADMAP',
+}

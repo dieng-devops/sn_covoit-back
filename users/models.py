@@ -1,11 +1,18 @@
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.models import AbstractUser, UserManager, User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
 from yobale import settings
+from colorfield.fields import ColorField
+from django_currentuser.middleware import (
+    get_current_user, get_current_authenticated_user)
+from django_currentuser.db.models import CurrentUserField
+from location_field.models.plain import PlainLocationField
+from django.core.validators import MaxValueValidator, MinValueValidator
+
 
 image_storage = FileSystemStorage(
     # Physical file location ROOT
@@ -29,14 +36,40 @@ HABITUE     = 'Habitue'
 CONFIRME    = 'Confirme'
 EXPERT      = 'Expert'
 AMBASSADEUR = 'Ambassadeur'
-####
-ROLES = [
-    (TRAINER, "Trainer"),
-    (MEMBER, "Member"),
-    (PASSAGER, "Passager"),
-    (CONDUCTEUR, "Conducteur"),
+#### CARBURANT
+ESSENCE = 'Essence'
+GAZOIL = 'Gazoil'
+ELECTRIQUE = 'Electrique'
+HYBRIDE = 'Hybride'
+#### MODES DE PAIEMENT
+CHEQUES = 'Par Chèques'
+ESPECES = 'Par espèces'
+CB = 'Carte Bancaire'
+VIREMENT = 'Par Virement'
+TRANSFERT = 'Par Transfert'
+#### TYPES LOCALITES
+REGION = 'Region'
+DEPARTEMENT = 'Departement'
+COMMUNE = 'Commune'
+VILLAGE = 'Village'
+#### STATUES TRAJET
+COMPLET = 'Complet'
+TERMINE = 'Termine'
+ANNULE = 'Annule'
+OUVERT = 'Ouvert'
+STATUE_TRAJET = [
+    (COMPLET, "Complet"),
+    (TERMINE, "Termine"),
+    (ANNULE, "Annule"),
+    (OUVERT, "Ouvert"),
 ]
-
+TYPE_LOCALITE = [
+    (REGION, "Region"),
+    (DEPARTEMENT, "Departement"),
+    (COMMUNE, "Commune"),
+    (VILLAGE, "Village"),
+]
+# EXPERIENCES
 EXPERIENCES =  [
     ( DEBUTANT, 'Debutant'),
     ( HABITUE, 'Habitué'),
@@ -44,11 +77,68 @@ EXPERIENCES =  [
     ( EXPERT , 'Expert'),
     ( AMBASSADEUR, 'Ambassadeur'),
 ]
+# MODE_PAIEMENT
+MODE_PAIEMENT = [
+    (CHEQUES, "Paiement par Chèques"),
+    (ESPECES, "Paiement par Espèces"),
+    (CB, "Paiement par Carte Bancaire"),
+    (VIREMENT, "Conducteur"),
+    (TRANSFERT, "Conducteur"),
+]
 
 DISCUSSION = ((True, 'J\'aime discuter parfois'), (False, 'Je n\'aime pas discuter quand je conduis' ))
 FUMEUR = ((True, 'J\'accepte la fumée'), (False, 'Je n\'aime pas la fumée dans la voiture' ))
 ANIMAUX = ((True, 'J\'accepte les animaux de compagnie'), (False, 'Je n\'aime pas les animaux de compagnie dans la voiture' ))
 MUSIQUE =  ((True, 'J\'aime bien écouter de la musique'), (False, 'Je n\'aime pas écouter de la musique en conduisant' ))
+
+CARBURANT = [
+    ( ESSENCE, "Essence"),
+    ( GAZOIL, "Gazoil"),
+    ( ELECTRIQUE, "Electrique"),
+    ( HYBRIDE, "Hybride"),
+]
+
+class Role(models.Model):
+    role= models.CharField(max_length=30, null=False,blank=False, verbose_name='Role du membre', unique=True)
+    created_on = models.DateTimeField(default=timezone.now)
+    description = models.TextField(default='', verbose_name='Description du role')
+    
+    class Meta:
+        verbose_name = "Role"
+        
+    def __str__(self):
+        return self.role
+
+class StatutTrajet(models.Model):
+    status= models.CharField(max_length=30, null=False,blank=False, verbose_name='Statue du trajet', unique=True)
+    created_on = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        verbose_name = "Statut Trajet"
+        
+    def __str__(self):
+        return self.status
+
+class Carburant(models.Model):
+    carburant_type= models.CharField(max_length=30, null=False,blank=False, verbose_name='CARBURANT', unique=True)
+    created_on = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        verbose_name = "Carburant"
+        
+    def __str__(self):
+        return self.carburant_type
+
+
+class ModePaiement(models.Model):
+    mode= models.CharField(max_length=30, null=False,blank=False, verbose_name='Mode de paiement', unique=True)
+    created_on = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        verbose_name = "Mode de Paiement"
+        
+    def __str__(self):
+        return self.mode
 
 # Creation d'un User
 class CustomUserManager(UserManager):
@@ -70,10 +160,10 @@ class CustomUserManager(UserManager):
 
         return self._create_user(email, email, password, **extra_fields)
 
-
 # Extension de l'utilisation Django
 class UserAccount(AbstractUser):
-    role = models.CharField(max_length=15, choices=ROLES, default="Member")
+    #role = models.CharField(max_length=15, choices=ROLES, default="Passager")
+    role = models.ManyToManyField(Role, related_name='roles')
     location = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(unique=True, null=False)
     phone_number = models.CharField(max_length=10, null=True,blank=True)
@@ -83,14 +173,15 @@ class UserAccount(AbstractUser):
     discussion = models.BooleanField(choices=DISCUSSION, default=True)
     fumeur = models.BooleanField(choices=FUMEUR, default=False)
     musique = models.BooleanField(choices=MUSIQUE, default=True)
+    profile_actif = models.BooleanField(default=False, verbose_name='Profile actif')
+
+
 
     objects = CustomUserManager()
     REQUIRED_FIELDS = [
         "first_name",
         "last_name",
         "phone_number",
-        "email_verifie",
-        "experience",
         "discussion",
         "fumeur",
         "musique"
@@ -100,76 +191,121 @@ class UserAccount(AbstractUser):
     def __str__(self):
         return self.get_full_name()
 
-# Profile d'un membre simple
-class MemberProfile(models.Model):
-    user = models.OneToOneField(
-        UserAccount, related_name='member_profiles',limit_choices_to={"role": "Member"}, on_delete=models.CASCADE
-    )
-    is_disabled = models.BooleanField(default=False)
-    description = models.TextField()
+
+
+class Membership(models.Model):
+    personne = models.OneToOneField(UserAccount,related_name='members_profiles', limit_choices_to={"role": "Passager"}, on_delete=models.CASCADE)
+    date_joined = models.DateField()
+    
+    class Meta:
+        verbose_name = "Membership"
+        
+    def __str__(self):
+        return self.personne
+
+#     user = models.OneToOneField(UserAccount,related_name='trainer_profiles', limit_choices_to={"role": "Trainer"}, on_delete=models.CASCADE)
+#     is_disabled = models.BooleanField(default=False, verbose_name='Profile actif')
+
+################# Modeles ORM YOBALE #################
+
+# As model field:
+class Voiture(models.Model):
+    marque = models.CharField(max_length=200, default='')
+    modele = models.CharField(max_length=200, default='')
+    couleur = ColorField(default='#FF0000')
+    carburant = models.CharField(max_length=15, choices=CARBURANT)
+    matricule =  models.CharField(max_length=30, default='')
+    description = models.TextField(default='')
+    proprietaire = CurrentUserField()
+    created_date = models.DateTimeField(default=timezone.now)
+    valide = models.BooleanField(default=False)
+
+
+
+class Tutorial(models.Model):
+    title = models.CharField(max_length=70, blank=False, default='')
+    description = models.CharField(max_length=200,blank=False, default='')
+    published = models.BooleanField(default=False)
+
+# Album
+class Region(models.Model):
+    nom = models.CharField(max_length=70, blank=False, default='', unique=True)
+    location = PlainLocationField(based_fields=['nom'], zoom=7, default='', blank=False)
+    description = models.CharField(max_length=200,blank=False, default='')
 
     def __str__(self):
-        return f"{self.user}"
+        return f"{self.nom}"
 
-# Profile d'un coach
-class TrainerProfile(models.Model):
-    user = models.OneToOneField(
-        UserAccount,related_name='trainer_profiles', limit_choices_to={"role": "Trainer"}, on_delete=models.CASCADE
-    )
-    description = models.TextField()
-    specialities = models.ManyToManyField('TrainerSpeciality')
+# Track
+class Departement(models.Model):
 
-    def __str__(self):
-        return f"{self.user}"
+    class Meta:
+        verbose_name = "Departement"
+        unique_together = ("nom", "region",)
+    
+    nom = models.CharField(max_length=70, blank=False, default='')
+    region = models.ForeignKey(Region, related_name='departements', on_delete=models.CASCADE)
+    location = PlainLocationField(based_fields=['nom'], zoom=7, default='', blank=False)
+    description = models.CharField(max_length=200,blank=False, default='')
 
-# Specialites d'un Coach
-class TrainerSpeciality(models.Model):
-    name = models.CharField(max_length=50)
-    description = models.TextField()
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{self.nom}"
 
-# Membre le plus proche a aviser
-class NextOfKin(models.Model):
-    member = models.ForeignKey(
-        UserAccount,
-        related_name="next_of_kins",
-        limit_choices_to={"role": "Member"},
-        on_delete=models.CASCADE,
-    )
-    first_name = models.CharField(max_length=200)
-    last_name = models.CharField(max_length=200, null=True, blank=True)
-    phone_number = models.CharField(max_length=200, null=True)
+# Etapes de trajet
+class Localite(models.Model):
+    
+    class Meta:
+        verbose_name = "Localite"
+
+    type_locatite = models.CharField(max_length=15, choices=TYPE_LOCALITE, default=COMMUNE, verbose_name= 'Type de la localité')
+    nom = models.CharField(max_length=70, blank=False, default='', verbose_name= 'Nom de la localité')
+    departement = models.ForeignKey(Departement, related_name='localites', on_delete=models.CASCADE)
+    description = models.CharField(max_length=200,blank=False, default='')
+    
+    
+    def __str__(self):
+        return f"{self.type_locatite} de {self.nom} [ {self.departement} ]"
+    
+# Trajet
+class Trajet(models.Model):
+    
+    class Meta:
+        verbose_name = "Trajet"
+        ordering = ['maj', 'date_depart']
+
+    depart = models.ForeignKey(Localite, related_name='depart', on_delete=models.CASCADE)
+    destination = models.ForeignKey(Localite, related_name='destination', on_delete=models.CASCADE)
+    prix_ht   = models.PositiveIntegerField(verbose_name="Prix unitaire HT")
+    prix_ttc   = models.PositiveIntegerField(verbose_name="Prix unitaire HT")
+    nb_places = models.PositiveIntegerField(verbose_name="Places disponibles", default=4)
+    etapes  = models.ManyToManyField("Localite", related_name="etapes")
+    date_depart = models.DateField(verbose_name='Date de départ', default=timezone.now)
+    heure_depart = models.TimeField(verbose_name='Heure de départ', blank=True, null=True)
+    date_arrivee = models.DateField(verbose_name='Date d\'arrivée', default=timezone.now)
+    heure_arrivee  = models.TimeField(verbose_name='Heure d\'arrivée', blank=True, null=True)
+    conducteur = CurrentUserField(verbose_name='Conducteur')
+    maj = models.DateTimeField(auto_now=True)
+    #passagers = models.ManyToManyField('UserAccount', limit_choices_to={"role": "Passager"})
+    
+    #members = models.ManyToManyField(Membership, limit_choices_to={"profile_actif": True})
+    members  = models.ManyToManyField("UserAccount", related_name="members", limit_choices_to={"profile_actif": True})
+    statue = models.ForeignKey(StatutTrajet, related_name='statue', on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.depart} => {self.destination} Départ le {self.date_depart} à {self.heure_depart} Arrivée le {self.date_arrivee} à {self.heure_arrivee}"
 
-# Creation d'un profile de Passager
-class PassagerProfile(models.Model):
-    user = models.OneToOneField(
-        UserAccount,related_name='passager_profiles', limit_choices_to={"role": "Passager"}, on_delete=models.CASCADE
-    )
+
+# Avis
+class Avis(models.Model):
+    contenu = models.TextField(verbose_name='Avis')
+    fait_le = models.DateTimeField(auto_now=True)
+    trajet = models.ForeignKey(Trajet, related_name='avis', on_delete=models.CASCADE, null=True, blank=True)
+    avis_sur = models.CharField(max_length=70, blank=False, default='', verbose_name= 'Avis donné sur')
+    auteur = CurrentUserField(verbose_name='Avis fait par')
+
+    class Meta:
+        verbose_name = "Avis"
 
     def __str__(self):
-        return f"{self.user}"
-
-############ Creation des modeles
-# Create your models here.
-class Author(models.Model):
-  name = models.CharField(max_length=200)
-  added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-  created_date = models.DateTimeField(default=timezone.now)
-
-  def __str__(self):
-    return self.name
-
-class Book(models.Model):
-  title = models.CharField(max_length=200)
-  description = models.CharField(max_length=300)  
-  author = models.ForeignKey(Author, on_delete=models.CASCADE)
-  added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-  created_date = models.DateTimeField(default=timezone.now)
-
-  def __str__(self):
-    return self.title
+        return f"{self.contenu}"

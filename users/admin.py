@@ -5,16 +5,20 @@ from django.contrib import admin
 from .models import *
 
 admin.site.register(UserAccount)
-admin.site.register(MemberProfile)
-admin.site.register(TrainerProfile)
-admin.site.register(TrainerSpeciality)
-admin.site.register(NextOfKin)
-admin.site.register(PassagerProfile)
-#admin.site.register(ModelTest)
-# Register your models here.
-admin.site.register(Author)
-admin.site.register(Book)
+admin.site.register(Voiture)
+admin.site.register(Tutorial)
+admin.site.register(Region)
+admin.site.register(Departement)
+admin.site.register(Localite)
+admin.site.register(Avis)
+admin.site.register(Membership)
+admin.site.register(Role)
+admin.site.register(StatutTrajet)
+admin.site.register(Trajet)
+
+####
 
 
-admin.site.site_header = "gymie admin"
-admin.site.site_title = "gymie"
+admin.site.site_header = "Yobale admin"
+admin.site.site_title = "Yobale"
+

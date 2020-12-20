@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: yobapi
+  name: yobapi-deployment
+  labels:
+    app: yobapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yobapi
+  template:
+    metadata:
+      labels:
+        app: yobapi
+    spec:
+      containers:
+      - name: yobapi
+        image: yobale:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000

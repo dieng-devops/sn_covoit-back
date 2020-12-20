@@ -1,8 +1,17 @@
 from django.core.exceptions import ObjectDoesNotExist
-from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
-from rest_framework.serializers import SerializerMethodField, CurrentUserDefault, HiddenField, ModelSerializer, StringRelatedField, PrimaryKeyRelatedField
+from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework.serializers import SerializerMethodField, CurrentUserDefault, HiddenField,  ModelSerializer,  PrimaryKeyRelatedField, StringRelatedField
+from rest_framework.relations import HyperlinkedIdentityField
 from .models import *
+
+# Serializer for Roles
+class RoleSerializer(ModelSerializer):
+    
+    class Meta:
+        model = Role
+        fields = ['id', 'role', 'created_on', 'description']
+
 
 # Serialiser un User Cutomise
 class CustomUserSerializer(UserSerializer):
@@ -10,6 +19,7 @@ class CustomUserSerializer(UserSerializer):
     Override djoser current user serializer to return abstact user fields
     """
     has_profile = SerializerMethodField()
+    role = RoleSerializer(many=True, read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = (
@@ -28,73 +38,25 @@ class CustomUserSerializer(UserSerializer):
             'discussion',
             'fumeur',
             'musique',
+            'profile_actif',
         )
 
     def get_has_profile(self, obj):
-        if obj.role == 'Member':
-            # check if the users have profiles associated with them
+        if obj.role == 'Conducteur':
             try:
-                return bool(obj.member_profiles)
+                #return bool(obj.conducteur_profiles)
+                return True
             except ObjectDoesNotExist:
                 return False
 
-        elif obj.role == 'Trainer':
+        elif obj.role == 'Passager':
             try:
-                return bool(obj.trainer_profiles)
+                #return bool(obj.passager_profiles)
+                return True
             except ObjectDoesNotExist:
                 return False
         else:
             return None
-
-# serialize member profile for creation
-class MemberProfileCreateSerializer(ModelSerializer):
-    user = HiddenField(default=CurrentUserDefault())
-
-    class Meta:
-        model = MemberProfile
-        fields = "__all__"
-
-
-# serialize member's profile
-class MemberDetailSerializer(ModelSerializer):
-    user = CustomUserSerializer(read_only=True)
-
-    class Meta:
-        model = MemberProfile
-        fields = "__all__"
-
-
-# serialize next of kin
-class NextOfKinSerializer(ModelSerializer):
-    member = StringRelatedField(read_only=True)
-    class Meta:
-        model = NextOfKin
-        fields = "__all__"
-
-
-
-# highlights the specialties of a trainer
-class TrainerSpecialtySerializer(ModelSerializer):
-    class Meta:
-        model = TrainerSpeciality
-        fields = '__all__'
-
-
-# allows creation of the trainer profile
-class TrainerCreateSerializer(ModelSerializer):
-    user = HiddenField(default=CurrentUserDefault()) #review later
-    class Meta:
-        model = TrainerProfile
-        fields = '__all__'
-
-
-# returns an object of trainer profile with user details
-class TrainerDetailSerializer(ModelSerializer):
-    user = CustomUserSerializer(read_only=True)
-    specialities = TrainerSpecialtySerializer(many=True,read_only=True)
-    class Meta:
-        model = TrainerProfile
-        fields = '__all__'
 
 # # highlights the specialties of a trainer
 # class TrainerSpecialtySerializer(ModelSerializer):
@@ -107,6 +69,7 @@ class UserRegistrationSerializer(UserCreateSerializer):
     Override djoser's usercreation class to accomodate abstract user fields
     """
 
+    #role = Roll(many=True, read_only=True)
     class Meta(UserCreateSerializer.Meta):
         fields = (
             "first_name",
@@ -122,16 +85,77 @@ class UserRegistrationSerializer(UserCreateSerializer):
             'discussion',
             'fumeur',
             'musique',
+            'profile_actif',
         )
 
-########## REST
 
-class AuthorSerializer(serializers.ModelSerializer):
+class VoitureSerializer(ModelSerializer):
+  class Meta:
+    model = Voiture
+    fields = ['id','marque', 'modele', 'couleur', 'carburant', 'matricule', 'description', 'proprietaire', 'created_date', 'valide']
+ 
+class TutorialSerializer(ModelSerializer):
+ 
     class Meta:
-        model = Author
-        fields = ['id', 'name', 'added_by', 'created_by']
+        model = Tutorial
+        fields = ('id',
+                  'title',
+                  'description',
+                  'published')
 
-class BookSerializer(serializers.ModelSerializer):
+
+class DepartementSerializer(ModelSerializer):
+
+    #localites = LocaliteSerializer(many=True, read_only=True)
     class Meta:
-        model = Book
-        fields = ['id', 'title', 'description', 'created_date', 'author', 'added_by']
+        model = Departement
+        fields = ['id', 'nom', 'location', 'description']
+
+# Serializer for Avis
+class LocaliteSerializer(ModelSerializer):
+    
+    departement = DepartementSerializer(read_only=True)
+    class Meta:
+        model = Localite
+        fields = ['id', 'type_locatite', 'nom', 'departement', 'description']
+
+# Serializer for Region
+class RegionSerializer(ModelSerializer):
+    # departements = StringRelatedField(many=True)
+    departements = DepartementSerializer(many=True, read_only=True)
+    #id  = HyperlinkedIdentityField(view_name='get_region_byId', read_only=True,lookup_field='id',)
+    
+    class Meta:
+        model = Region
+        fields = ['id', 'nom', 'location', 'description', 'departements']
+
+# Serializer for Avis
+class AvisSerializer(ModelSerializer):
+    auteur = UserSerializer()
+    class Meta:
+        model = Avis
+        fields = ['id', 'contenu', 'fait_le', 'avis_sur', 'auteur']
+
+# Serializer for Statut Trajet
+class StatutSerializer(ModelSerializer):
+    class Meta:
+        model = StatutTrajet
+        fields = ['id', 'status', 'created_on']
+
+class TrajetSerializer(ModelSerializer):
+    etapes = StringRelatedField(many=True)
+    #etapes = LocaliteSerializer(read_only=True)
+    avis = AvisSerializer(many=True, read_only=True)
+    depart = LocaliteSerializer()
+    destination = LocaliteSerializer()
+    conducteur = UserSerializer() 
+    #passagers = UserSerializer()    
+    statue = StatutSerializer(read_only=True)
+
+    class Meta:
+        model = Trajet
+        fields = ['id', 'depart', 'destination', 'prix_ht', 'prix_ttc', 
+                'nb_places', 'etapes', 'date_depart', 'heure_depart', 
+                'date_arrivee', 'heure_arrivee', 'conducteur', 'maj', 'avis', 'statue']
+
+
