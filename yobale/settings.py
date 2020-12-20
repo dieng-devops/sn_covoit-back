@@ -99,6 +99,17 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.postgresql_psycopg2'),
+#         'NAME': os.getenv('DATABASE_NAME', 'db'),
+#         'USER': os.getenv('DATABASE_USER', 'user'),
+#         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'password'),
+#         'HOST': os.getenv('DATABASE_SERVICE_HOST', '127.0.0.1'),
+#         'PORT': os.getenv('DATABASE_SERVICE_PORT', 5432)
+#     }
+# }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -263,3 +274,8 @@ LOCATION_FIELD = {
 'provider.google.api_libraries': '',
 'provider.google.map.type': 'ROADMAP',
 }
+
+
+# MY_POD_NAME = os.getenv('MY_POD_NAME', 'local')
+# MY_POD_NAMESPACE = os.getenv('MY_POD_NAMESPACE', 'local')
+# MY_POD_IP = os.getenv('MY_POD_IP', 'localhost')
